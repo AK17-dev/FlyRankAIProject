@@ -2,6 +2,8 @@
 
 > Capstone project scaffold for the FlyRank Frontend AI Engineering track.
 
+**Author:** Abdelkader Khanji
+
 ## Status
 
 This repository is currently just the environment and toolchain setup (Week 1). No application code yet — the actual project will be built out over the coming weeks.
