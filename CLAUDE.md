@@ -18,3 +18,8 @@ finalized yet — this file will be filled in as the project takes shape.
 
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
 - TBD as tooling and structure are decided.
+
+## Guardrails
+
+- Scope is not finalized. Do not introduce a stack, dependencies, config files,
+  or app structure speculatively — confirm the plan with the user first.
