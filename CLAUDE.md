@@ -33,7 +33,7 @@ the user then asks follow-up questions against that audit in the same conversati
 
 These are enforceable. If a change would violate one, stop and say so rather than working around it.
 
-- **Secrets are server-side only.** `ANTHROPIC_API_KEY` and any future key is read from
+- **Secrets are server-side only.** `GOOGLE_GENERATIVE_AI_API_KEY` and any future key is read from
   `process.env` in server code only. Never `NEXT_PUBLIC_`-prefixed, never referenced under
   `components/` or `hooks/`.
 - **Model configuration lives in one module** (`lib/ai/config.ts`). Model ids, system prompts,
