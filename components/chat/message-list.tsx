@@ -29,7 +29,7 @@ export function MessageList({ messages, status }: MessageListProps) {
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div ref={scrollRef} className="h-full overflow-y-auto overscroll-contain">
+      <div ref={scrollRef} className="thin-scrollbar h-full overflow-y-auto overscroll-contain">
         <div ref={contentRef} className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6">
           {messages.map((message) => (
             <Message key={message.id} message={message} isStreaming={message.id === streamingMessageId} />
@@ -48,9 +48,25 @@ export function MessageList({ messages, status }: MessageListProps) {
         <button
           type="button"
           onClick={() => scrollToBottom()}
-          className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-lg transition-opacity hover:opacity-90"
+          aria-label="Jump to latest messages"
+          title="Jump to latest"
+          // Anchored to the outer (non-scrolling) wrapper's corner, clear of
+          // both the message column (which is narrower than this container
+          // on any viewport wide enough to have margin) and the composer
+          // (a separate flex sibling below this whole component, not
+          // inside it) — so it can never sit on top of either.
+          className="absolute bottom-4 right-4 z-10 flex size-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg transition-opacity hover:opacity-90"
         >
-          Jump to latest
+          <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+            <path
+              d="M6 9L12 15L18 9"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       )}
     </div>

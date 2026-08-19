@@ -55,11 +55,18 @@ export function useStickToBottom({ scrollRef, contentRef }: UseStickToBottomOpti
 
     const onScroll = () => {
       if (programmaticScrollRef.current) {
+        // A *smooth* programmatic scroll (the jump-to-latest button) fires
+        // many scroll events across its animation, only the first of which
+        // is still flagged here — the rest land in the branch below like
+        // any other scroll event. Consuming the flag without touching
+        // pinned state (rather than recomputing it from the still-mid-
+        // flight position) matters: recomputing here used to read "not at
+        // the bottom yet" as "user scrolled away" and unpin mid-animation,
+        // which then stopped the ResizeObserver's auto-follow from
+        // tracking content that kept growing while the animation was
+        // still in flight, landing it short of the real bottom.
         programmaticScrollRef.current = false;
         lastScrollTopRef.current = el.scrollTop;
-        const atBottom = computeIsAtBottom(el);
-        pinnedRef.current = atBottom;
-        setIsAtBottom(atBottom);
         return;
       }
 
@@ -72,9 +79,15 @@ export function useStickToBottom({ scrollRef, contentRef }: UseStickToBottomOpti
         return;
       }
 
-      const atBottom = computeIsAtBottom(el);
-      pinnedRef.current = atBottom;
-      setIsAtBottom(atBottom);
+      // Moving down (or not moving) never un-pins by itself — only an
+      // upward scroll does that, above. This also means the remaining
+      // frames of a smooth scrollToBottom() animation, which all land
+      // here once the flag above is consumed, can't undo the pin either;
+      // they can only confirm it once the real bottom is reached.
+      if (computeIsAtBottom(el)) {
+        pinnedRef.current = true;
+        setIsAtBottom(true);
+      }
     };
 
     el.addEventListener("scroll", onScroll, { passive: true });
