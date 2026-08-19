@@ -40,9 +40,24 @@ export function Composer({ value, onChange, status, onSend, onStop, onRetry }: C
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
+    // A textarea's "auto" intrinsic height is governed by its `rows`
+    // attribute, not its content — offsetHeight after `height: auto`
+    // would just report the rows=1 height regardless of how much text is
+    // in it. scrollHeight is the one measurement that reflects actual
+    // content, but it excludes border while `height` is a border-box
+    // value (Tailwind Preflight sets box-sizing: border-box), so border
+    // is added back explicitly — without it the box is permanently
+    // border-width short of its own content and registers as
+    // "overflowing" by a couple of px even at rest. maxHeight is computed
+    // from live padding/border rather than hardcoded so the ~5-line cap
+    // tracks the textarea's actual box model instead of drifting from it.
+    const cs = getComputedStyle(el);
+    const borderVertical = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+    const paddingVertical = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     el.style.height = "auto";
-    const maxHeight = LINE_HEIGHT_PX * MAX_TEXTAREA_LINES;
-    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+    const contentDrivenHeight = el.scrollHeight + borderVertical;
+    const maxHeight = LINE_HEIGHT_PX * MAX_TEXTAREA_LINES + paddingVertical + borderVertical;
+    el.style.height = `${Math.min(contentDrivenHeight, maxHeight)}px`;
   }, [value]);
 
   // Refocus after a stream finishes or is stopped, so "stop -> type -> send"
@@ -103,7 +118,7 @@ export function Composer({ value, onChange, status, onSend, onStop, onRetry }: C
           rows={1}
           disabled={isGenerating}
           aria-label="Message"
-          className="min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-border bg-card px-4 py-2.5 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+          className="composer-textarea min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-border bg-card px-4 py-2.5 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
         />
         <SendStopButton status={status} hasContent={hasContent} />
       </div>

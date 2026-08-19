@@ -48,3 +48,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Scoped to the composer textarea only — a slim scrollbar with no native
+   up/down arrow buttons, since the OS default (Windows classic scrollbars
+   in particular) render as a chunky control that doesn't fit inside a
+   rounded input. */
+.composer-textarea {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.composer-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.composer-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.composer-textarea::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+}
+
+.composer-textarea::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
