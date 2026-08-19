@@ -9,16 +9,23 @@ import { google } from "@ai-sdk/google";
 // the MODEL line — `route.ts` and every component only ever import MODEL,
 // SYSTEM_PROMPT, TEMPERATURE, and MAX_OUTPUT_TOKENS, never a provider type.
 //
-// Model: gemini-2.5-flash, verified against the installed @ai-sdk/google
-// (4.0.45) GoogleModelId type. Deliberately not the newest Flash release
-// (gemini-3.7-flash): live-tested during this build, its free tier is
-// capped at 20 requests/day *project-wide* (confirmed via the API's own
-// 429 response — "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
-// quota 20), which a single reviewer's conversation can exhaust for
-// everyone else that day. gemini-2.5-flash is an established GA model with
-// a materially higher free-tier daily allowance, which matters more here
-// than being on the newest release.
-export const MODEL = google("gemini-2.5-flash");
+// Model: gemini-3.5-flash-lite, verified against the installed
+// @ai-sdk/google (4.0.45) GoogleModelId type.
+//
+// Free-tier quota, per the Google AI Studio dashboard (not inferred from
+// 429 responses): every full Flash model (gemini-2.5-flash,
+// gemini-3.5-flash, gemini-3.6-flash, gemini-3.7-flash, ...) shares the
+// same 20 requests/day, 5 requests/minute *project-wide* limit.
+// gemini-3.5-flash-lite gets 500 requests/day, 15 requests/minute — a 25x
+// daily allowance, which is what actually matters for a public demo URL a
+// single reviewer's conversation could otherwise exhaust for everyone else
+// that day. Quality was A/B tested against gemini-3.5-flash on the same
+// URL (audit structure, exact-quote accuracy against real page copy, and
+// the traffic-question refusal) before switching: no meaningful gap.
+// lib/seo/audit-cache.ts exists for the same underlying reason — keeping
+// repeat requests for the same URL off this quota entirely. A paid plan
+// removes the cap altogether.
+export const MODEL = google("gemini-3.5-flash-lite");
 
 // Audits should be reproducible: same page in, same findings out. This is
 // analysis (what's wrong, why, how to fix), not creative copywriting, so we
