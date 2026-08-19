@@ -30,7 +30,7 @@ export function MessageList({ messages, status }: MessageListProps) {
   return (
     <div className="relative min-h-0 flex-1">
       <div ref={scrollRef} className="h-full overflow-y-auto overscroll-contain">
-        <div ref={contentRef} className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6">
+        <div ref={contentRef} className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6">
           {messages.map((message) => (
             <Message key={message.id} message={message} isStreaming={message.id === streamingMessageId} />
           ))}

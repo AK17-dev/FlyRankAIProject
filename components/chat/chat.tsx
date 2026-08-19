@@ -44,20 +44,20 @@ export function Chat() {
         <MessageList messages={messages} status={status} />
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
-          <div className="space-y-2">
+          <div className="max-w-2xl space-y-2">
             <h1 className="text-xl font-semibold text-foreground">SEO Audit</h1>
-            <p className="max-w-sm text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Paste a URL and get a structured audit — technical SEO issues plus a pass on copy
               that reads as generic or machine-written. Then ask follow-ups.
             </p>
           </div>
-          <div className="flex w-full max-w-sm flex-col gap-2">
+          <div className="flex w-full max-w-2xl flex-col gap-2">
             {SUGGESTED_PROMPTS.map((prompt) => (
               <button
                 key={prompt}
                 type="button"
                 onClick={() => setInput(prompt)}
-                className="min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                className="min-h-11 break-words rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-colors hover:bg-muted"
               >
                 {prompt}
               </button>
@@ -67,7 +67,7 @@ export function Chat() {
       )}
 
       {status === "error" && error && (
-        <p role="alert" className="mx-auto w-full max-w-3xl px-4 text-sm text-red-600">
+        <p role="alert" className="mx-auto w-full max-w-2xl px-4 text-sm text-red-600">
           {error.message || "Something went wrong. Try again."}
         </p>
       )}

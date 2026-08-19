@@ -87,21 +87,26 @@ export function Composer({ value, onChange, status, onSend, onStop, onRetry }: C
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex items-end gap-2 border-t border-border bg-background p-3"
+      className="border-t border-border bg-background p-3"
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Paste a URL to audit, or ask a follow-up…"
-        rows={1}
-        disabled={isGenerating}
-        aria-label="Message"
-        className="min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-border bg-card px-4 py-2.5 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
-      />
-      <SendStopButton status={status} hasContent={hasContent} />
+      {/* The bar spans the full width; only its content is constrained, so
+          the input sits under the conversation column instead of stretching
+          edge to edge on wide viewports. */}
+      <div className="mx-auto flex w-full max-w-2xl items-end gap-2">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Paste a URL to audit, or ask a follow-up…"
+          rows={1}
+          disabled={isGenerating}
+          aria-label="Message"
+          className="min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-border bg-card px-4 py-2.5 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+        />
+        <SendStopButton status={status} hasContent={hasContent} />
+      </div>
     </form>
   );
 }
