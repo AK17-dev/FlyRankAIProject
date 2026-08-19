@@ -61,28 +61,32 @@ export async function POST(req: Request) {
   }
 
   const messages = parsed.data.messages as UIMessage[];
-  const auditAlreadyGiven = messages.some((m) => m.role === "assistant");
 
-  // Turn one: if the audit hasn't happened yet and the newest user message
-  // contains a URL, fetch and parse that page server side, then fold the
-  // resulting <page_data> block into the message before it reaches the
-  // model. Every later turn skips this — the audit (and its page data)
-  // already lives in the transcript the client resent.
-  if (!auditAlreadyGiven) {
-    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
-    const url = lastUserMessage ? extractFirstUrl(textOf(lastUserMessage)) : null;
+  // Re-fetch and inject <page_data> on every turn, not just turn one. The
+  // server-side injection below mutates a request-local copy of the
+  // messages array to build this call's model context — it is never
+  // streamed back to the client, so the client's own persisted history
+  // never actually contains a <page_data> block. Gating this to "turn one
+  // only" (checking for a prior assistant message) silently strands every
+  // follow-up turn with zero page context, since the assumption that the
+  // data is "already in the transcript" is false for what the client
+  // resends. This does mean every follow-up re-fetches the page — a real
+  // latency cost — but the alternative (correctness) matters more without
+  // a persistence layer to carry the data forward some other way.
+  const alreadyHasPageData = messages.some((m) => textOf(m).includes("<page_data>"));
+  const firstUserMessage = messages.find((m) => m.role === "user");
+  const url = firstUserMessage ? extractFirstUrl(textOf(firstUserMessage)) : null;
 
-    if (url && lastUserMessage) {
-      try {
-        const pageData = await fetchPageData(url);
-        lastUserMessage.parts = [
-          ...lastUserMessage.parts,
-          { type: "text", text: `\n\n${formatPageDataBlock(pageData)}` },
-        ];
-      } catch (err) {
-        const message = err instanceof PageFetchError ? err.message : "Could not fetch that page. Check the URL and try again.";
-        return Response.json({ error: message }, { status: 422 });
-      }
+  if (!alreadyHasPageData && url && firstUserMessage) {
+    try {
+      const pageData = await fetchPageData(url);
+      firstUserMessage.parts = [
+        ...firstUserMessage.parts,
+        { type: "text", text: `\n\n${formatPageDataBlock(pageData)}` },
+      ];
+    } catch (err) {
+      const message = err instanceof PageFetchError ? err.message : "Could not fetch that page. Check the URL and try again.";
+      return Response.json({ error: message }, { status: 422 });
     }
   }
 
@@ -96,6 +100,12 @@ export async function POST(req: Request) {
       temperature: TEMPERATURE,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       messages: modelMessages,
+      // Without this, stop() on the client aborts the fetch but the
+      // server has no idea — it keeps generating (and burning API
+      // quota) to completion regardless. req.signal fires when the
+      // client disconnects, which streamText uses to actually cancel
+      // the underlying model call.
+      abortSignal: req.signal,
       onError: ({ error }) => {
         // Server-side only — never forwarded to the client as-is.
         console.error("streamText error", error);
