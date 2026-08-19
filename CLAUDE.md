@@ -14,7 +14,7 @@ the user then asks follow-up questions against that audit in the same conversati
 
 - Framework: Next.js (App Router), TypeScript
 - Styling: Tailwind CSS
-- AI: Anthropic Claude via the AI SDK (`ai`, `@ai-sdk/anthropic`, `@ai-sdk/react`)
+- AI: Google Gemini via the AI SDK (`ai`, `@ai-sdk/google`, `@ai-sdk/react`)
 - Package manager: npm
 - Forms: `react-hook-form` + `zod`
 - Testing: whatever `page.test.tsx` in the FE-03 branch runs under — confirm and name it here
@@ -62,6 +62,23 @@ These are enforceable. If a change would violate one, stop and say so rather tha
 - **Persistence goes in `lib/`.** No `console.log` placeholders standing in for a data layer.
 - **One agent instruction file wins.** If Next.js scaffolds an `AGENTS.md`, this file takes
   precedence on any conflict. Do not maintain overlapping rules across both.
+- **Streamed markdown always renders through `components/chat/markdown.tsx`.**
+  It wraps `streamdown`, the only place raw model text becomes markup. No
+  other component may pipe streamed text into a markdown parser or
+  `dangerouslySetInnerHTML` directly — partial fences and emphasis mid-stream
+  will break anything that isn't built for incomplete input.
+- **Autoscroll logic lives only in `hooks/use-stick-to-bottom.ts`.** Components
+  must not add their own scroll-position `useEffect`s or a `useEffect` keyed
+  on `messages.length` — token deltas arrive without changing message count,
+  so that effect shape silently stops firing mid-stream.
+- **Chat routes are stateless.** The client resends the full message history
+  every turn; a route handler must not read or write server-side
+  conversation state between requests without discussion first.
+- **A model's free-tier daily quota is verified with a live call before it
+  goes in `lib/ai/config.ts`, not assumed from the model's tier name.**
+  FE-06 shipped with `gemini-3.7-flash` initially, whose free tier turned out
+  to cap at 20 requests/day project-wide — enough to strand every reviewer
+  after the first. Per-minute limits are necessary but not sufficient.
 
 ## Guardrails
 
