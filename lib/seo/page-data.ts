@@ -1,4 +1,4 @@
-import { parse } from "node-html-parser";
+import { parse, NodeType, type HTMLElement, type Node } from "node-html-parser";
 
 // Keeps the <page_data> block a bounded size regardless of page length, so a
 // single huge page can't blow past the model's context/output budget.
@@ -96,10 +96,58 @@ export async function fetchPageData(rawUrl: string): Promise<PageData> {
   return parsePageData(url.href, html);
 }
 
+const BLOCK_TAGS = new Set([
+  "ADDRESS", "ARTICLE", "ASIDE", "BLOCKQUOTE", "DD", "DETAILS", "DIALOG",
+  "DIV", "DL", "DT", "FIELDSET", "FIGCAPTION", "FIGURE", "FOOTER", "FORM",
+  "H1", "H2", "H3", "H4", "H5", "H6", "HEADER", "HR", "LI", "MAIN", "NAV",
+  "OL", "P", "PRE", "SECTION", "TABLE", "TBODY", "TD", "TFOOT", "TH",
+  "THEAD", "TR", "UL",
+]);
+
+// Walks the DOM rather than reading the element's flat `.text`, which
+// concatenates every descendant text node with no separator at all — an
+// <h1> immediately followed by a <p> reads back as one fused word. Each
+// block-level element becomes its own paragraph; inline elements (a,
+// span, strong, ...) within a block stay joined as running text, and
+// runs of whitespace collapse to a single space.
+function extractBodyText(root: HTMLElement): string {
+  const paragraphs: string[] = [];
+  let buffer = "";
+
+  const flush = () => {
+    const collapsed = buffer.replace(/\s+/g, " ").trim();
+    if (collapsed) paragraphs.push(collapsed);
+    buffer = "";
+  };
+
+  const walk = (node: Node) => {
+    if (node.nodeType === NodeType.TEXT_NODE) {
+      buffer += node.rawText;
+      return;
+    }
+    if (node.nodeType !== NodeType.ELEMENT_NODE) return;
+
+    const el = node as HTMLElement;
+    if (el.tagName === "BR") {
+      buffer += "\n";
+      return;
+    }
+
+    const isBlock = BLOCK_TAGS.has(el.tagName ?? "");
+    if (isBlock) flush();
+    for (const child of el.childNodes) walk(child);
+    if (isBlock) flush();
+  };
+
+  walk(root);
+  flush();
+  return paragraphs.join("\n\n");
+}
+
 function parsePageData(url: string, html: string): PageData {
   const root = parse(html);
 
-  root.querySelectorAll("script, style, noscript").forEach((node) => node.remove());
+  root.querySelectorAll("script, style, noscript, nav, footer").forEach((node) => node.remove());
 
   const title = root.querySelector("title")?.text.trim() || null;
 
@@ -117,9 +165,8 @@ function parsePageData(url: string, html: string): PageData {
     }))
     .filter((h) => h.text.length > 0);
 
-  const fullBodyText = (root.querySelector("body")?.text ?? "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const bodyEl = root.querySelector("body");
+  const fullBodyText = bodyEl ? extractBodyText(bodyEl) : "";
   const bodyTextTruncated = fullBodyText.length > MAX_BODY_CHARS;
   const bodyText = bodyTextTruncated ? fullBodyText.slice(0, MAX_BODY_CHARS) : fullBodyText;
 
