@@ -42,11 +42,24 @@ export class PageFetchError extends Error {
   }
 }
 
-// Matches the first http(s) URL in free-typed text, so a composer message
-// like "audit https://example.com for me" still resolves to a fetch target.
+// Matches an explicit http(s) URL if present, so a composer message like
+// "audit https://example.com for me" still resolves to a fetch target.
+const SCHEME_URL_PATTERN = /https?:\/\/[^\s<>"')\]]+/i;
+
+// Falls back to a bare-domain pattern (funounplatform.netlify.app,
+// example.com/pricing) for input with no scheme at all — a bare URL is
+// the most natural thing to type, and nothing requires the "Audit "
+// prefix the suggested prompts happen to use. Requires a real-looking
+// TLD (2+ letters, no digits) specifically so this doesn't also match
+// "e.g." or a version number like "v1.2".
+const BARE_DOMAIN_PATTERN = /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?:\/[^\s<>"')\]]*)?/i;
+
 export function extractFirstUrl(text: string): string | null {
-  const match = text.match(/https?:\/\/[^\s<>"')\]]+/i);
-  return match ? match[0] : null;
+  const withScheme = text.match(SCHEME_URL_PATTERN);
+  if (withScheme) return withScheme[0];
+
+  const bare = text.match(BARE_DOMAIN_PATTERN);
+  return bare ? `https://${bare[0]}` : null;
 }
 
 export async function fetchPageData(rawUrl: string): Promise<PageData> {
